@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, raw } from 'express';
 import { AppError } from '@/utils/AppError';
 import { knex } from '../database/knex';
 import { z } from 'zod';
@@ -49,15 +49,31 @@ class OrdersController {
     }
   }
 
-  async index(req: Request, res: Response, next: NextFunction)  {
+  async index(req: Request, res: Response, next: NextFunction) {
     try {
-      return res.json()
+      const { table_session_id } = req.params;
+
+      const order = await knex('orders')
+        .select(
+          'orders.id',
+          'orders.table_session_id',
+          'orders.product_id',
+          'products.name',
+          'orders.price',
+          'orders.quantity',
+          knex.raw('(orders.price * orders.quantity) AS total'),
+          'orders.created_at',
+          'orders.updated_at',
+        )
+        .join('products', 'products.id', 'orders.product_id')
+        .where({ table_session_id })
+        .orderBy('orders.created_at', 'desc');
+
+      return res.json(order);
     } catch (error) {
       next(error);
     }
   }
 }
-
-
 
 export { OrdersController };
