@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { AppError } from '@/utils/AppError';
+import { AppError } from '@/utils/AppError'; 
 import { knex } from '../database/knex';
 import { z } from 'zod';
 
@@ -16,7 +16,27 @@ export class OrdersController {
         req.body,
       );
 
-      return res.status(201).json();
+      const session = await knex<TableSessionsRepository>('table_sessions')
+        .where({ id: table_session_id })
+        .first();
+
+        if (!session) {
+          throw new AppError('Table session not found', 404);
+        }
+
+        if (session.closed_at) {
+          throw new AppError('Table session is already closed', 400);
+        }
+
+        const product = await knex<ProductRepository>('products')
+        .where({ id: product_id })
+        .first();
+
+        if (!product) {
+          throw new AppError('Product not found', 404);
+        }
+
+      return res.status(201).json(session);
     } catch (error) {
       next(error);
     }
