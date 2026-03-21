@@ -74,6 +74,24 @@ class OrdersController {
       next(error);
     }
   }
+
+  async show(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { table_session_id } = req.params;
+
+      const order = await knex('orders')
+        .select(
+          knex.raw('COALESCE(SUM(orders.price * orders.quantity), 0) AS total'),
+          knex.raw('COALESCE(SUM(orders.quantity), 0) AS total_items'),
+        )
+        .where({ table_session_id })
+        .first();
+
+      return res.json(order);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export { OrdersController };
